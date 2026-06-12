@@ -1,0 +1,18 @@
+node_modules
+dist
+.wrangler
+.dev.vars
+.deepspace
+.worker-bundle.js
+*.tgz
+test-results
+
+# Agent tooling — re-installable via `npx deepspace skills add` (see CLAUDE.md)
+.agents
+.claude
+
+# Build/coordination artifacts — not part of the shipped app. Jackbox reference
+# screenshots under docs/research are copyrighted and must never be published.
+docs/design
+docs/research
+docs/shots

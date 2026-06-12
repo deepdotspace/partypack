@@ -1,0 +1,339 @@
+@import "tailwindcss" source(none);
+@import "./themes.css";
+
+/* Scan local source + SDK components for Tailwind class usage */
+@source "./**/*.{ts,tsx}";
+@source "../node_modules/deepspace/dist/**/*.js";
+
+/*
+ * Theming — pure shadcn/ui CSS variables with [data-theme] selectors.
+ *
+ * The @theme block below holds the default theme (slate). All other themes
+ * live in `themes.css` as `[data-theme="<id>"]` override blocks. Switching
+ * themes = changing the data-theme attribute on <html> in index.html. No
+ * JS, no FOUC.
+ *
+ * Status colors (success, warning, info) are intentionally NOT themed —
+ * they stay consistent across every preset.
+ */
+@theme {
+  /* ============================================================
+   * LATE NIGHT — the Party Pack hub world. One midnight-velvet
+   * stage shared by all three games; each game brings its own
+   * accent pair: Wisecrack = Lime/Gold, Baloney = Magenta/Cyan,
+   * Pitch = Tangerine/Violet. Hub chrome leans Marquee Gold.
+   * ============================================================ */
+
+  /* shadcn core tokens mapped to LATE NIGHT (midnight velvet stage) */
+  --color-background: #15102b;        /* Midnight Velvet */
+  --color-foreground: #fff6fb;        /* Stage White */
+  --color-card: #241544;              /* Curtain Plum */
+  --color-card-foreground: #fff6fb;
+  --color-popover: #241544;
+  --color-popover-foreground: #fff6fb;
+  --color-primary: #ffd23f;           /* Marquee Gold — hub signature */
+  --color-primary-foreground: #15102b;
+  --color-secondary: #2e1b55;         /* lifted velvet */
+  --color-secondary-foreground: #fff6fb;
+  --color-muted: #2e1b55;
+  --color-muted-foreground: #b8a6c9;  /* Cool Smoke */
+  --color-accent: #ff2e97;            /* Hot Magenta — secondary pop */
+  --color-accent-foreground: #15102b;
+  --color-destructive: #ff3b3b;       /* Siren */
+  --color-destructive-foreground: #fff6fb;
+  --color-border: rgba(184, 166, 201, 0.18);
+  --color-input: rgba(184, 166, 201, 0.22);
+  --color-ring: #ffd23f;
+  --radius: 1.25rem;                  /* big rounded cards (~20px) */
+
+  /* Brand palette — LATE NIGHT. Also the 8-color player roster hues. */
+  --color-velvet: #15102b;   /* midnight base */
+  --color-plum: #241544;     /* curtain plum */
+  --color-magenta: #ff2e97;  /* Baloney accent 1 */
+  --color-cyan: #27e1ff;     /* Baloney accent 2 */
+  --color-lime: #c6ff3d;     /* Wisecrack accent 1 */
+  --color-gold: #ffd23f;     /* Wisecrack accent 2 / hub marquee */
+  --color-tangerine: #ff8a3d;/* Pitch accent 1 */
+  --color-violet: #9d5cff;   /* Pitch accent 2 */
+  --color-coral: #ff5e7a;
+  --color-mint: #6ee7a8;
+  --color-siren: #ff3b3b;
+  --color-stage: #fff6fb;    /* stage white */
+  --color-smoke: #b8a6c9;    /* cool smoke */
+
+  /* Fonts — Display = Archivo Black (marquee/code/titles/numbers, game-show
+   * grotesque punch); body = Inter (prompts, system UI); marker = Permanent
+   * Marker (PLAYER-WRITTEN text on white ContentCards only — Tailwind emits a
+   * `font-marker` utility from this token). */
+  --font-display: 'Archivo Black', 'Archivo', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-score: 'Archivo Black', 'Archivo', system-ui, sans-serif;
+  --font-marker: 'Permanent Marker', 'Comic Sans MS', cursive;
+
+  /* Surface elevations — stepped velvet, lighter as it comes forward. */
+  --color-surface-0: #0d0921;   /* deepest base */
+  --color-surface-1: #15102b;   /* page */
+  --color-surface-2: #1c1536;   /* cards */
+  --color-surface-3: #241544;   /* raised cards */
+  --color-surface-4: #2e1b55;   /* hover / active */
+
+  /* Focal neon glows — used ONLY on the single hero element per screen (static). */
+  --glow-lime: 0 0 28px rgba(198, 255, 61, 0.42);
+  --glow-gold: 0 0 28px rgba(255, 210, 63, 0.42);
+  --glow-cyan: 0 0 28px rgba(39, 225, 255, 0.42);
+  --glow-coral: 0 0 28px rgba(255, 94, 122, 0.42);
+  --glow-magenta: 0 0 28px rgba(255, 46, 151, 0.42);
+  --glow-tangerine: 0 0 28px rgba(255, 138, 61, 0.42);
+  --glow-violet: 0 0 28px rgba(157, 92, 255, 0.42);
+
+  /* Status colors — constant across all themes */
+  --color-success: #10b981;
+  --color-success-foreground: #ffffff;
+  --color-warning: #f59e0b;
+  --color-warning-foreground: #ffffff;
+  --color-info: #3b82f6;
+  --color-info-foreground: #ffffff;
+
+  /*
+   * Shadows — slate (default). Each theme in themes.css tunes these.
+   *
+   * Toned down 2026-05: previous values were 8px/12px offset with
+   * 32px/40px blur which read as a heavy halo under every Card on
+   * the page. New values are Linear/Stripe-style: barely-there at
+   * rest, slightly more present on hover.
+   *
+   * IMPORTANT: starter components (`Card`, `Dialog`, `CardGrid`,
+   * `Navigation`, `Toast`) intentionally use literal shadow values
+   * via `shadow-[…]` arbitrary-value classes, NOT the
+   * `shadow-card` / `shadow-card-hover` token classes Tailwind v4
+   * generates from this @theme block. Why: Tailwind's @theme directive
+   * compiles these tokens into the utility-class definitions at build
+   * time, and runtime [data-theme] overrides don't always cancel the
+   * baked baseline cleanly — apps switching themes were getting the
+   * slate value carried forward on the compiled `shadow-card` class.
+   * Sidestepping the token system in starter components is the
+   * deterministic fix. See docs/platform/theming-shadows.md.
+   */
+  --shadow-card: 0 1px 2px 0 rgba(0, 0, 0, 0.12);
+  --shadow-card-hover: 0 2px 8px 0 rgba(0, 0, 0, 0.16);
+
+  /* Animations */
+  --animate-pulse-glow: pulse-glow 2s ease-in-out infinite;
+
+  /* Backward-compatibility aliases */
+  --color-surface: var(--color-background);
+  --color-surface-elevated: var(--color-card);
+  --color-surface-overlay: var(--color-muted);
+  --color-surface-input: rgba(46, 27, 85, 0.6);
+  --color-content: var(--color-foreground);
+  --color-content-secondary: var(--color-muted-foreground);
+  --color-content-muted: #8a7aa8;
+  --color-content-inverse: #15102b;
+  --color-border-strong: rgba(184, 166, 201, 0.35);
+  --color-border-focus: var(--color-ring);
+  --color-primary-hover: #ffdd66;
+  --color-primary-muted: rgba(255, 210, 63, 0.2);
+  --color-primary-border: rgba(255, 210, 63, 0.3);
+  --color-danger: var(--color-destructive);
+  --color-danger-muted: rgba(239, 68, 68, 0.2);
+  --color-danger-border: rgba(239, 68, 68, 0.4);
+  --color-success-muted: rgba(16, 185, 129, 0.2);
+  --color-success-border: rgba(16, 185, 129, 0.4);
+  --color-warning-muted: rgba(245, 158, 11, 0.2);
+  --color-warning-border: rgba(245, 158, 11, 0.4);
+  --color-info-muted: rgba(59, 130, 246, 0.2);
+  --color-info-border: rgba(59, 130, 246, 0.4);
+}
+
+/* Theme override blocks live in `themes.css` — imported above. */
+
+/*
+ * Animation keyframes for shadcn components.
+ * These replace the tailwindcss-animate plugin which is not compatible with Tailwind v4.
+ */
+@keyframes animate-in {
+  from { opacity: var(--tw-enter-opacity, 1); transform: translate3d(var(--tw-enter-translate-x, 0), var(--tw-enter-translate-y, 0), 0) scale3d(var(--tw-enter-scale, 1), var(--tw-enter-scale, 1), var(--tw-enter-scale, 1)) rotate(var(--tw-enter-rotate, 0)); }
+}
+
+@keyframes animate-out {
+  to { opacity: var(--tw-exit-opacity, 1); transform: translate3d(var(--tw-exit-translate-x, 0), var(--tw-exit-translate-y, 0), 0) scale3d(var(--tw-exit-scale, 1), var(--tw-exit-scale, 1), var(--tw-exit-scale, 1)) rotate(var(--tw-exit-rotate, 0)); }
+}
+
+@utility animate-in {
+  animation-name: animate-in;
+  animation-duration: 150ms;
+  --tw-enter-opacity: initial;
+  --tw-enter-scale: initial;
+  --tw-enter-translate-x: initial;
+  --tw-enter-translate-y: initial;
+  --tw-enter-rotate: initial;
+}
+
+@utility animate-out {
+  animation-name: animate-out;
+  animation-duration: 150ms;
+  --tw-exit-opacity: initial;
+  --tw-exit-scale: initial;
+  --tw-exit-translate-x: initial;
+  --tw-exit-translate-y: initial;
+  --tw-exit-rotate: initial;
+}
+
+@utility fade-in-0 { --tw-enter-opacity: 0; }
+@utility fade-out-0 { --tw-exit-opacity: 0; }
+@utility zoom-in-95 { --tw-enter-scale: .95; }
+@utility zoom-out-95 { --tw-exit-scale: .95; }
+@utility slide-in-from-top-2 { --tw-enter-translate-y: -0.5rem; }
+@utility slide-in-from-bottom-2 { --tw-enter-translate-y: 0.5rem; }
+@utility slide-in-from-left-2 { --tw-enter-translate-x: -0.5rem; }
+@utility slide-in-from-right-2 { --tw-enter-translate-x: 0.5rem; }
+@utility slide-out-to-top-2 { --tw-exit-translate-y: -0.5rem; }
+@utility slide-out-to-bottom-2 { --tw-exit-translate-y: 0.5rem; }
+@utility slide-out-to-left-2 { --tw-exit-translate-x: -0.5rem; }
+@utility slide-out-to-right-2 { --tw-exit-translate-x: 0.5rem; }
+
+
+/*
+ * Custom base styles — must be in @layer base so utility classes can override.
+ */
+@layer base {
+  html {
+    /* Default to dark for native form controls (calendar icons, scrollbars).
+     * Light themes opt into `color-scheme: light` in themes.css. */
+    color-scheme: dark;
+  }
+
+  html, body, #root {
+    min-height: 100vh;
+    /* Deep indigo base — the darkest stop of the landing's indigo world. This
+     * is the very first paint (before React mounts) and the substrate under
+     * every World layer, so the open-app sequence reads as one continuous
+     * indigo field instead of flashing the old dark velvet/near-black. */
+    background-color: #101e66;
+    scroll-behavior: smooth;
+  }
+
+  /* #root must form a stacking context: the full-bleed scene layers
+   * (shared/Backdrop, shared/World) are `fixed -z-10` DESCENDANTS of #root.
+   * Without isolation they join the page's root stacking context, where
+   * negative z-index paints BELOW #root's opaque background-color — i.e.
+   * they're invisible (v1 shipped that way; every screen rendered flat).
+   * With isolation, "behind everything" means behind #root's content but
+   * above its background. */
+  #root {
+    isolation: isolate;
+  }
+
+  body {
+    font-family: var(--font-body), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-size: 16px;
+    color: var(--color-foreground);
+    /* Solid base only (deep indigo, matching the world layers). Every screen
+     * paints its own World/Backdrop layer on a fixed -z-10 div; a body
+     * background-image with background-attachment: fixed forces a background
+     * repaint on every scroll frame (the classic scroll-jank source) and was
+     * never visible under the world layers anyway. */
+    background-color: #101e66;
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    border-radius: 0.25rem;
+    background-color: var(--color-border);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-muted-foreground);
+  }
+
+  /* Selection styling */
+  ::selection {
+    background-color: var(--color-primary);
+    color: var(--color-primary-foreground);
+  }
+
+  /*
+   * Focus indication is intentionally NOT applied app-wide via a
+   * `*:focus-visible` rule. Doing so paints a colored outline onto
+   * every focusable element on the page — including programmatically
+   * focusable containers like Radix DismissableLayer wrappers,
+   * dialog overlays, and any element with `tabindex={-1}` used for
+   * scroll containment. The result reads as "the entire panel /
+   * dialog is selected" the moment a child button is clicked.
+   *
+   * Per-component focus indicators (e.g. shadcn's
+   * `focus-visible:ring-1` on Button, `focus-visible:border-ring` on
+   * Input / Textarea / Select) are sufficient for keyboard
+   * accessibility and don't bleed onto containers.
+   *
+   * If you DO need a global indicator for very keyboard-heavy apps,
+   * scope it tightly — e.g. only to interactive elements:
+   *
+   *   a:focus-visible,
+   *   button:focus-visible,
+   *   [role="button"]:focus-visible,
+   *   input:focus-visible,
+   *   select:focus-visible,
+   *   textarea:focus-visible {
+   *     outline: 2px solid var(--color-primary);
+   *     outline-offset: 2px;
+   *   }
+   *
+   * — never `*`.
+   */
+
+  /* Prevent 300ms tap delay on mobile */
+  a, button, [role="button"], input, select, textarea {
+    touch-action: manipulation;
+  }
+}
+
+/*
+ * Decorative idle animations — CSS keyframes on transform/opacity ONLY, so
+ * they run on the compositor and stay smooth no matter what the main thread
+ * (React tick renders, framer one-shots) is doing. framer-motion v11 animates
+ * x/y/rotate shorthands via rAF on the MAIN thread, which is why infinite
+ * loops don't belong in it (motion.dev/docs/performance). will-change is
+ * Full-screen
+ * background layers are NOT animated at all (see World.tsx): even compositor
+ * animation of a viewport-sized layer janks weak GPUs.
+ */
+@keyframes pp-marquee-float {
+  0%, 100% { transform: rotate(-1.5deg) translateY(0); }
+  50%      { transform: rotate(-1.5deg) translateY(-7px); }
+}
+@keyframes pp-bob {
+  0%, 100% { transform: translateY(0) rotate(-1.5deg); }
+  50%      { transform: translateY(-5px) rotate(1.5deg); }
+}
+@keyframes pp-blink {
+  0%, 100% { opacity: 0.5; }
+  50%      { opacity: 1; }
+}
+@keyframes pp-ticker {
+  to { transform: translateX(-50%); }
+}
+
+.anim-marquee-float { animation: pp-marquee-float 5s ease-in-out infinite; }
+.anim-bob { animation: pp-bob 4s ease-in-out infinite; }
+.anim-blink { animation: pp-blink 1.6s ease-in-out infinite; }
+.anim-blink-alt { animation: pp-blink 1.6s ease-in-out infinite; animation-delay: -0.8s; }
+.anim-ticker { animation: pp-ticker 14s linear infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .anim-marquee-float, .anim-bob, .anim-blink, .anim-blink-alt, .anim-ticker {
+    animation: none;
+  }
+}

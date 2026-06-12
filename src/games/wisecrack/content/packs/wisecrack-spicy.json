@@ -1,0 +1,30 @@
+{
+  "packId": "wisecrack.spicy.v1",
+  "title": "Wisecrack After Dark",
+  "description": "Edgier, cheekier prompts for grown-up game nights. Off by default. Host toggles it on. Original content.",
+  "language": "en",
+  "license": "MIT",
+  "attribution": "Original content © Wisecrack, 2026.",
+  "sourceUrl": null,
+  "authors": ["first-party"],
+  "isCommunity": false,
+  "version": 1,
+  "prompts": [
+    { "id": "s001", "text": "The worst thing to say out loud on a first date: ___", "tags": ["dating"], "safety": "spicy" },
+    { "id": "s002", "text": "A pickup line that has never, ever worked: ___", "tags": ["dating"], "safety": "spicy" },
+    { "id": "s003", "text": "The real reason your ex unfollowed you: ___", "tags": ["dating"], "safety": "spicy" },
+    { "id": "s004", "text": "A dating app that would absolutely fail: ___", "tags": ["dating", "names"], "safety": "spicy" },
+    { "id": "s005", "text": "The worst possible tattoo to get on vacation: ___", "tags": ["regret"], "safety": "spicy" },
+    { "id": "s006", "text": "A terrible thing to say in the middle of a breakup: ___", "tags": ["dating"], "safety": "spicy" },
+    { "id": "s007", "text": "The most awkward thing to do at a hot tub party: ___", "tags": ["awkward"], "safety": "spicy" },
+    { "id": "s008", "text": "A bad excuse for showing up to work in last night's clothes: ___", "tags": ["work"], "safety": "spicy" },
+    { "id": "s009", "text": "The worst possible thing to keep in your nightstand: ___", "tags": ["bedroom"], "safety": "spicy" },
+    { "id": "s010", "text": "A terrible thing to name the group chat after the trip: ___", "tags": ["friends"], "safety": "spicy" },
+    { "id": "s011", "text": "The real reason you got asked to leave the bar: ___", "tags": ["nightlife"], "safety": "spicy" },
+    { "id": "s012", "text": "A cheap tequila brand destined for regret: ___", "tags": ["nightlife", "names"], "safety": "spicy" },
+    { "id": "s013", "text": "The worst possible thing to text the entire group chat at 2am: ___", "tags": ["friends"], "safety": "spicy" },
+    { "id": "s014", "text": "An unhinged thing to whisper to your massage therapist: ___", "tags": ["awkward"], "safety": "spicy" },
+    { "id": "s015", "text": "The worst possible thing to say to your in-laws over dinner: ___", "tags": ["family"], "safety": "spicy" },
+    { "id": "s016", "text": "A spectacularly bad theme for a bachelor or bachelorette party: ___", "tags": ["nightlife"], "safety": "spicy" }
+  ]
+}
