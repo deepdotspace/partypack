@@ -116,6 +116,11 @@ describe('baloneyEngine.registryRow', () => {
     expect(baloneyEngine.registryRow(s, ['p0', 'p1', 'p2'])).toEqual({ name: 'P0', playerCount: 3 })
   })
 
+  it('playerCount counts only LIVE connected humans, not ghost (disconnected) seats', () => {
+    const s = publicLobby() // 3 seated
+    expect(baloneyEngine.registryRow(s, ['p0'])).toEqual({ name: 'P0', playerCount: 1 })
+  })
+
   it('delists when `connected` excludes all seated players', () => {
     const s = publicLobby()
     expect(baloneyEngine.registryRow(s, [])).toBeNull()

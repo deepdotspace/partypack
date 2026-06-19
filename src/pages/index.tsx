@@ -72,18 +72,30 @@ export default function Landing() {
   )
 }
 
-/** Joinable public lobbies only. The DO deletes started/empty/private rows,
- *  but guard against stale ones via the envelope's updatedAt. Newest first. */
+/** Joinable public lobbies only. The DO deletes started/empty/private rows
+ *  (on the last disconnect and every tick), but guard against a rare orphan via
+ *  the envelope's updatedAt: a LIVE lobby re-stamps its row on a ~15s heartbeat
+ *  (worker.ts syncRegistry), so a 45s window drops a just-abandoned room fast
+ *  while never hiding a live lobby waiting for players.
+ *
+ *  Sort is STABLE — fullest first (matches "Play online" matchmaking), then
+ *  oldest first as a tiebreak. We deliberately do NOT sort by updatedAt: the
+ *  heartbeat bumps it every ~15s, which would reshuffle the list under the
+ *  user's cursor. */
 function useOpenRooms(): RoomRow[] {
   const { records } = useQuery<RoomRow>('rooms')
-  const fresh = Date.now() - 15 * 60 * 1000
+  const fresh = Date.now() - 45 * 1000
   return records
     .filter((r) => {
       const d = r.data
       if (!d?.roomCode || !isGameId(d.game)) return false
       return d.playerCount < GAMES[d.game].maxPlayers && new Date(r.updatedAt).getTime() > fresh
     })
-    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+    .sort(
+      (a, b) =>
+        b.data.playerCount - a.data.playerCount ||
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+    )
     .map((r) => r.data)
 }
 

@@ -50,4 +50,8 @@ export interface HubGameState {
   registryId?: string | null
   /** recordId of the persisted podium recap, set once per game session (DO-managed). */
   recapId?: string | null
+  /** Wall-clock ms of the previous tick (DO-managed). Lets the DO detect a freeze
+   *  gap (all players left → the SDK halted the tick loop → someone returned) and
+   *  re-base a timed phase's deadline so it doesn't fast-forward on resume. */
+  lastTickAt?: number
 }

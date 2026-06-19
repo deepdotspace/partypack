@@ -125,6 +125,8 @@ export interface GameState extends HubGameState {
   game: 'pitch'
   phase: Phase
   hostUserId: string | null
+  /** cid of the first host, so they reclaim the host bit after a brief blip. */
+  originalHostCid?: string
   config: GameConfig
   seed: number // set once at room init; seeds brief draws + board shuffles
   roomCode: string // captured from the first client JOIN; the DO stamps it onto recap + registry rows

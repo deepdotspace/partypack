@@ -88,9 +88,23 @@ export function reduce(prev: GameState, inputs: RawInput[], ctx: WisecrackCtx): 
     forceAdvance = forceAdvance || r.forceAdvance
   }
 
-  // Host handoff: if the host has disconnected, pass the host bit to the first
-  // still-connected seat so START / SKIP / PLAY_AGAIN never strand the room.
-  if (draft.hostUserId && !ctx.connected.includes(draft.hostUserId)) {
+  // Host authority. RECLAIM first: if the original host is back and connected
+  // (a brief disconnect handed the bit to a friend), give it back — so a host
+  // whose phone backgrounded for a moment doesn't permanently lose START /
+  // SKIP / PLAY_AGAIN. Otherwise HAND OFF: if the current host is gone, pass
+  // the bit to the first still-connected seat so the room never strands.
+  const reclaimId = draft.originalHostCid
+    ? draft.order.find(
+        (id) => draft.players[id]?.cid === draft.originalHostCid && ctx.connected.includes(id),
+      )
+    : undefined
+  if (reclaimId && reclaimId !== draft.hostUserId) {
+    const prev = draft.hostUserId ? draft.players[draft.hostUserId] : undefined
+    if (prev) prev.role = 'contestant'
+    draft.hostUserId = reclaimId
+    draft.players[reclaimId].role = 'host'
+    changed = true
+  } else if (draft.hostUserId && !ctx.connected.includes(draft.hostUserId)) {
     const next = draft.order.find((id) => ctx.connected.includes(id))
     if (next && next !== draft.hostUserId) {
       const old = draft.players[draft.hostUserId]
@@ -158,16 +172,18 @@ function applyInput(
       // every reference (order, host, in-flight matchups, rate-limit maps) from
       // the old id so the returning player keeps their seat, score, and authorship.
       if (cid) {
-        // Seat-steal guard: cids are broadcast in state, so possession of one
-        // proves nothing. Only rebind a seat whose owner has no live socket and
-        // is human (bots never hold sockets — without the isBot check a crafted
-        // JOIN could take over a bot's seat).
+        // A same-cid JOIN from a new connection id IS a reconnect: only that
+        // device persists the cid in localStorage. Rebind its seat even if the
+        // old socket still shows connected — a backgrounded phone's old socket
+        // lingers half-open (its close fires late), and requiring the old id to
+        // be absent stranded the returning player as a ghost spectator whose
+        // taps were silently rejected. We keep only the isBot guard (bots hold
+        // no sockets; without it a crafted JOIN could seize a bot seat). cids
+        // are already broadcast in state, so the old "must be disconnected"
+        // check never provided real protection (an attacker could grab a cid
+        // and time any blip) — reconnect reliability matters more.
         const oldId = Object.keys(draft.players).find(
-          (id) =>
-            id !== userId &&
-            draft.players[id]?.cid === cid &&
-            !ctx.connected.includes(id) &&
-            !draft.players[id]?.isBot,
+          (id) => id !== userId && draft.players[id]?.cid === cid && !draft.players[id]?.isBot,
         )
         if (oldId) {
           const p = draft.players[oldId]
@@ -215,7 +231,10 @@ function applyInput(
         role,
       }
       if (role !== 'spectator') draft.order.push(userId)
-      if (isFirst) draft.hostUserId = userId
+      if (isFirst) {
+        draft.hostUserId = userId
+        if (cid) draft.originalHostCid = cid // remembered so the host can reclaim after a blip
+      }
       return { changed: true, forceAdvance: false }
     }
 

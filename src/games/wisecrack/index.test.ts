@@ -125,6 +125,12 @@ describe('wisecrackEngine.registryRow', () => {
     expect(wisecrackEngine.registryRow(s, ['p0', 'p1', 'p2'])).toEqual({ name: 'P0', playerCount: 3 })
   })
 
+  it('playerCount counts only LIVE connected humans, not ghost (disconnected) seats', () => {
+    const s = publicLobby() // 3 seated
+    // only p0 is still connected → the row advertises 1, not a stale 3
+    expect(wisecrackEngine.registryRow(s, ['p0'])).toEqual({ name: 'P0', playerCount: 1 })
+  })
+
   it('delists when `connected` excludes all seated players', () => {
     const s = publicLobby()
     expect(wisecrackEngine.registryRow(s, [])).toBeNull()

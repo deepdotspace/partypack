@@ -508,20 +508,22 @@ function driveToPodium(start: GameState): GameState {
   return s
 }
 
-describe('engine — seat-steal guard (cids are public in broadcast state)', () => {
-  it("JOIN with a CONNECTED player's cid gets its own seat — no takeover", () => {
+describe('engine — same-cid reconnect (survives the half-open socket window)', () => {
+  it('rebinds a seat to a new connection id even while the OLD id still shows connected', () => {
+    // A backgrounded phone's old socket lingers (its close fires late), so the
+    // reconnect JOIN lands while the old id is still in `connected`. The same-cid
+    // JOIN must still rebind, or the returning player is stranded as a ghost.
+    // (Trade-off: since cids are broadcast, a crafted same-cid JOIN can also take
+    // a seat — a low-payoff grief we accept for reliable mobile reconnect.)
     let s = initialState(11)
     s = join(s, ['p0', 'p1', 'p2'], 1000)
-    s = step(s, [{ userId: 'evil', action: 'JOIN', data: { name: 'EVIL', cid: 'cid-p1' } }], 1100, ['p0', 'p1', 'p2'])
-    expect(s.players['p1']).toBeDefined() // victim keeps the seat
-    expect(s.players['p1'].name).toBe('P1')
-    expect(s.hostUserId).toBe('p0')
-    expect(s.players['evil']).toBeDefined() // attacker seated fresh
-    expect(s.players['evil'].score).toBe(0)
-    expect(s.order).toHaveLength(4)
+    s = step(s, [{ userId: 'p1b', action: 'JOIN', data: { name: 'P1', cid: 'cid-p1' } }], 1100, ['p0', 'p1', 'p2', 'p1b'])
+    expect(s.players['p1']).toBeUndefined() // old seat handed over
+    expect(s.players['p1b']).toBeDefined() // rebound onto the new id
+    expect(s.order).toEqual(['p0', 'p1b', 'p2']) // same position, no 4th orphan
   })
 
-  it("a DISCONNECTED player's seat still rebinds (legit refresh unaffected)", () => {
+  it("a DISCONNECTED player's seat still rebinds (clean refresh unaffected)", () => {
     let s = initialState(11)
     s = join(s, ['p0', 'p1', 'p2'], 1000)
     s = step(s, [{ userId: 'p1b', action: 'JOIN', data: { name: 'P1', cid: 'cid-p1' } }], 1100, ['p0', 'p2', 'p1b'])

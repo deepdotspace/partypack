@@ -139,18 +139,19 @@ export const pitchEngine: GameEngine = {
   },
 
   registryRow(state, connected) {
-    // The hub listing rule: a public, open LOBBY with a free seat and at
-    // least one CONNECTED seated player (bots never hold sockets).
+    // The hub listing rule: a public, open LOBBY with a free seat and at least
+    // one live, CONNECTED, non-bot player. playerCount reflects LIVE humans
+    // (bots hold no sockets; a disconnected "ghost" seat isn't in `connected`),
+    // so the landing never advertises a dead or over-counted room.
     const s = asPitch(state)
-    const anyConnected = s.order.some((id) => connected.includes(id))
+    const liveCount = s.order.filter((id) => connected.includes(id) && !s.players[id]?.isBot).length
     const shouldList =
       s.config.isPublic &&
       s.phase === 'LOBBY' &&
-      s.order.length > 0 &&
-      s.order.length < MAX_PLAYERS &&
-      anyConnected
+      liveCount > 0 &&
+      s.order.length < MAX_PLAYERS // free-seat gate stays on total seats (bots occupy seats)
     if (!shouldList) return null
     const hostName = (s.hostUserId && s.players[s.hostUserId]?.name) || 'Open room'
-    return { name: hostName, playerCount: s.order.length }
+    return { name: hostName, playerCount: liveCount }
   },
 }

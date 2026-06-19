@@ -176,6 +176,36 @@ export class AppGameRoom extends GameRoom<Env> {
     super(state, env, { tickRate: 2, minPlayers: 1, maxPlayers: 12 })
   }
 
+  /**
+   * Delist this room's public-rooms row the instant the LAST seated human
+   * leaves. The registry is normally kept in sync every tick (syncRegistry in
+   * onTick), but the SDK halts the tick loop on the final disconnect
+   * (GameRoom.onDisconnect calls stopGame once players hits 0), so onTick can
+   * never run the delete for an abandoned lobby — the row would orphan and the
+   * landing would advertise a dead room. We do the delete here instead.
+   *
+   * getPlayers() is the live human socket roster (bots hold no sockets); the
+   * leaving player is already removed before this hook fires, so length 0
+   * means the room just emptied.
+   */
+  protected override onPlayerLeave(): void {
+    if (this.getPlayers().length !== 0) return // not the last one out
+    const gs = this.getGameState()
+    const registryId = gs.registryId
+    if (typeof registryId !== 'string') return // not listed → nothing to delist
+    this.regSig = '' // clear the in-memory throttle so a revived room re-lists
+    // Null the id so a later re-list CREATEs a fresh row instead of UPDATEing a
+    // now-deleted one. stopGame() runs right after this (we're empty) and
+    // persists the state, carrying the null through.
+    this.setGameState({ ...gs, registryId: null })
+    // waitUntil keeps the DO alive past the now-stopped tick loop until the
+    // delete settles. Best-effort: a rare miss stops being re-stamped, so the
+    // landing's freshness window hides it (and a cron sweep can reclaim it).
+    this.state.waitUntil(
+      this.recordOp('records.delete', { collection: 'rooms', recordId: registryId }).catch(() => {}),
+    )
+  }
+
   protected async onTick(
     state: Record<string, unknown>,
     inputs: GameInput[],
@@ -212,8 +242,22 @@ export class AppGameRoom extends GameRoom<Env> {
     const eng = ENGINES[gs.game]
     if (!eng) return { game: null } // engine de-registered between deploys — back to pre-state
 
+    const now = Date.now()
+    // Freeze re-base: when every player leaves, the SDK halts the tick loop; on
+    // resume the next tick fires with a fresh clock far past phaseEndsAt, which
+    // would fast-forward a timed phase through the time nobody was here. Shift
+    // the deadline forward by the frozen gap — `+= gap` exactly preserves the
+    // time that was left, so no cap is needed. The 3s threshold ignores normal
+    // ~500ms ticks; we then stamp lastTickAt for the next tick's gap check.
+    const timed = gs as { phaseEndsAt?: number; lastTickAt?: number }
+    if (typeof timed.lastTickAt === 'number' && typeof timed.phaseEndsAt === 'number') {
+      const gap = now - timed.lastTickAt
+      if (gap > 3000) timed.phaseEndsAt += gap
+    }
+    timed.lastTickAt = now
+
     const ctx: ReduceCtx = {
-      now: Date.now(),
+      now,
       connected: this.getPlayers().map((p) => p.userId),
       content: eng.content,
     }
@@ -455,7 +499,13 @@ export class AppGameRoom extends GameRoom<Env> {
     connected: string[],
   ): Promise<{ changed: boolean; registryId: string | null }> {
     const row = eng.registryRow(view, connected)
-    const sig = row ? `on|${view.game}|${row.playerCount}|${row.name}` : 'off'
+    // ~15s heartbeat bucket: an idle-but-ALIVE public lobby re-stamps its row
+    // (the records.update path bumps the envelope updatedAt) so the landing can
+    // use a short staleness window without hiding live lobbies that are just
+    // waiting for more players. An abandoned room stops ticking, so its row
+    // stops re-stamping and the window drops it.
+    const beat = Math.floor(Date.now() / 15_000)
+    const sig = row ? `on|${view.game}|${row.playerCount}|${row.name}|${beat}` : 'off'
     const unchanged = { changed: false, registryId: view.registryId ?? null }
     if (sig === this.regSig) return unchanged
     this.regSig = sig
@@ -467,8 +517,22 @@ export class AppGameRoom extends GameRoom<Env> {
           return unchanged
         }
         const id = (await this.recordOp('records.create', { collection: 'rooms', data })) ?? null
-        if (!id) this.regSig = '' // create failed — clear the throttle so we retry next tick
-        return { changed: Boolean(id), registryId: id }
+        if (!id) {
+          this.regSig = '' // create failed — clear the throttle so we retry next tick
+          return unchanged
+        }
+        // Race guard: the input gate is open across the outbound create fetch, so
+        // the LAST human can leave mid-create. onPlayerLeave couldn't delete this
+        // row (its id didn't exist yet), so do it here — never leave a freshly
+        // created row with nobody in it.
+        if (this.getPlayers().length === 0) {
+          this.regSig = ''
+          this.state.waitUntil(
+            this.recordOp('records.delete', { collection: 'rooms', recordId: id }).catch(() => {}),
+          )
+          return { changed: true, registryId: null }
+        }
+        return { changed: true, registryId: id }
       }
       if (view.registryId) {
         await this.recordOp('records.delete', { collection: 'rooms', recordId: view.registryId })
