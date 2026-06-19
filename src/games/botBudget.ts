@@ -68,3 +68,18 @@ export function tryReserve(
   }
   return { cell: { day, used: used + n }, allowed: true }
 }
+
+/**
+ * Guard 5: a bot may only generate (spend) when a real human is actually
+ * playing — i.e. at least one SEATED, currently-connected, non-bot player. A
+ * Stage (TV) holds a write socket without taking a seat, so gating on "any
+ * connection" let a game left running on a TV keep billing the owner for AI
+ * with nobody playing. `order` = seated ids; `connectedIds` = live socket ids.
+ */
+export function hasSeatedHuman(
+  order: string[],
+  players: Record<string, { isBot?: boolean } | undefined>,
+  connectedIds: ReadonlySet<string>,
+): boolean {
+  return order.some((id) => connectedIds.has(id) && !players[id]?.isBot)
+}

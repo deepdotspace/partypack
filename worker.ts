@@ -35,6 +35,7 @@ import {
   ROOM_BOT_LIFETIME,
   DAILY_BOT_CAP,
   tryReserve,
+  hasSeatedHuman,
   type BudgetCell,
 } from './src/games/botBudget.js'
 
@@ -156,7 +157,9 @@ type HubState = HubGameState | { game: null }
  *
  * Low tickRate — these are timer-paced turn games, not 60fps sims. maxPlayers
  * is the WS-connection ceiling (seats + stage displays + spectators); each
- * engine enforces its own seat caps server-side.
+ * engine enforces its own seat caps server-side. Headroom matters: a phone
+ * reconnecting leaves its old socket counted until that close fires, so a room
+ * with churn briefly holds more connections than seats.
  */
 export class AppGameRoom extends GameRoom<Env> {
   /** Synthetic inputs (bot answers/votes) to fold into the next tick's reduce. */
@@ -173,7 +176,7 @@ export class AppGameRoom extends GameRoom<Env> {
   private regSig = ''
 
   constructor(state: DurableObjectState, env: Env) {
-    super(state, env, { tickRate: 2, minPlayers: 1, maxPlayers: 12 })
+    super(state, env, { tickRate: 2, minPlayers: 1, maxPlayers: 24 })
   }
 
   /**
@@ -353,10 +356,12 @@ export class AppGameRoom extends GameRoom<Env> {
     // LLM generations.
     const tasks = bots.needsGeneration(view)
     if (tasks.length === 0) return
-    // Guard 5: require ≥1 live human connection before any bot generates —
-    // bots never hold websockets, so every connected player is a human. A
-    // bots-only room never calls AI (kills empty bot farms).
-    if (this.getPlayers().length === 0) return
+    // Guard 5: require at least one SEATED, connected, non-bot human before any
+    // bot generates (a Stage holds a write socket without taking a seat, so "any
+    // connection" kept bots billing the owner on a TV with nobody playing).
+    const connectedIds = new Set(this.getPlayers().map((p) => p.userId))
+    const seated = view as unknown as { order?: string[]; players?: Record<string, { isBot?: boolean }> }
+    if (!hasSeatedHuman(seated.order ?? [], seated.players ?? {}, connectedIds)) return
 
     for (const t of tasks) {
       const key = `${t.botId}:${t.task}`

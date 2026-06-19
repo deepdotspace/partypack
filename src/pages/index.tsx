@@ -83,7 +83,9 @@ export default function Landing() {
  *  heartbeat bumps it every ~15s, which would reshuffle the list under the
  *  user's cursor. */
 function useOpenRooms(): RoomRow[] {
-  const { records } = useQuery<RoomRow>('rooms')
+  // Bound the fetch to the freshest rooms so a busy night (or rare orphan rows)
+  // never streams the whole table to every visitor. 40 >> what the list shows.
+  const { records } = useQuery<RoomRow>('rooms', { orderBy: 'updatedAt', orderDir: 'desc', limit: 40 })
   const fresh = Date.now() - 45 * 1000
   return records
     .filter((r) => {
