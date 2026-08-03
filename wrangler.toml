@@ -42,7 +42,7 @@ bindings = [
 
 [vars]
 APP_NAME = "partypack"
-DEEPSPACE_APP_ID = "partypack"
+DEEPSPACE_APP_ID = "app_01KZ4GQH9JEJF8TPXZ6KF3R101"
 
 [dev]
 port = 8780
