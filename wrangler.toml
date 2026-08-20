@@ -1,12 +1,14 @@
 name = "partypack"
-compatibility_date = "2025-01-01"
-compatibility_flags = ["nodejs_compat"]
+# Matches the installed workerd build (1.20260609.1). A date newer than the
+# runtime you actually run on is unsupported. Honored from this file since 0.15.0.
+compatibility_date = "2026-06-09"
+compatibility_flags = ["nodejs_compat", "assets_navigation_has_no_effect"]
 main = "worker.ts"
 
 [assets]
 directory = "dist"
 binding = "ASSETS"
-not_found_handling = "single-page-application"
+not_found_handling = "none"
 run_worker_first = ["/api/*", "/ws/*", "/internal/*", "/v1/*", "/_deepspace/*"]
 
 [[migrations]]

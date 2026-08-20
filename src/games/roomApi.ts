@@ -5,7 +5,7 @@
  * a game's hook (e.g. useWisecrack) wraps the SAME socket instead of opening a
  * second one.
  */
-import type { useGameRoom } from 'deepspace'
+import type { useGameRoom } from '../vendor/deepspace-game/useGameRoom'
 
 export type RoomApi = ReturnType<typeof useGameRoom>
 
