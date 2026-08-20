@@ -14,7 +14,7 @@
  */
 import { Suspense, useEffect } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
-import { useGameRoom } from 'deepspace'
+import { useGameRoom } from '../vendor/deepspace-game/useGameRoom'
 import { isValidRoomCode, normalizeRoomCode } from '../shared/roomCode'
 import { isGameId, type GameId } from './registry'
 import { VIEWS } from './views'
